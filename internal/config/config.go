@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	DefaultEdgeURL = "https://app.certlocker.io/edge/rest"
-	DefaultUIURL   = "https://app.certlocker.io"
+	DefaultEdgeURL = "https://trust.certlocker.io/rest"
+	DefaultUIURL   = "https://trust.certlocker.io"
 	dirName        = "trust"
 	fileName       = "config.json"
 )

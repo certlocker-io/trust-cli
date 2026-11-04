@@ -82,8 +82,8 @@ Credentials and the saved URLs live under the OS config directory, mode `0600` o
 
 | Flag | Environment | Default |
 | --- | --- | --- |
-| `--edge` | `TRUST_EDGE_URL` | `https://app.certlocker.io/edge/rest` |
-| `--ui` | `TRUST_UI_URL` | `https://app.certlocker.io` |
+| `--edge` | `TRUST_EDGE_URL` | `https://trust.certlocker.io/rest` |
+| `--ui` | `TRUST_UI_URL` | `https://trust.certlocker.io` |
 
 `--ui` is only used by `auth login`. A flag wins over the environment, which wins over `config.json`.
 
@@ -327,9 +327,14 @@ and private-key fields. Gateway `CERTLOCKER_TOKEN` credentials belong to the
 Go/Rust/Java clients and Ansible; this management CLI needs an Edge browser login
 and session. Select the deployment with `--ui`/`--edge` or `TRUST_UI_URL` and
 `TRUST_EDGE_URL`; account selection comes from that authenticated Edge session.
-The configured `app.certlocker.io` default did not resolve during verification;
-`trust.certlocker.io/edge/rest` returned HTML rather than a working Edge API.
-An explicit, enabled UI/Edge URL is required until rollout DNS/routing is ready.
+The default UI is `https://trust.certlocker.io` and the Edge API base is
+`https://trust.certlocker.io/rest`, matching the deployed UI configuration.
+On 2026-11-04, that deployment supported ordinary UI login but returned 404 for
+both `POST /rest/security/v1/cli-authorize` and `cli-token`. Its deployed UI bundle
+also lacked CLI callback support. Deploy the matching Trust Edge and ui-edge
+versions before using browser CLI login; completing ordinary UI 2FA alone cannot
+complete the CLI handoff. Account-scoped Gateway requests also returned 404 while
+legacy token metadata succeeded.
 
 ```bash
 go test -race ./...
@@ -342,5 +347,5 @@ including PKCE browser callback/exchange, saved credentials at mode 0600, token
 create/get/update/revoke, secret create/get/put/revoke, and logout cleanup. It
 prints sanitized JSON proof. This is not live user login or live 2FA proof.
 Live Edge authentication and management create/update remain unverified until a
-working Edge endpoint and an account/browser login are available. See
+CLI-enabled Edge/UI deployment and an account/browser login are available. See
 [verification](docs/verification-2026-11-04.md).

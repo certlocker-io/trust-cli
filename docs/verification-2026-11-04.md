@@ -27,3 +27,18 @@ Separately, the actual Gateway was tested through Ansible plus the Go and Rust
 SDK smoke executables: secret creation, idempotent repeat, exact value readback,
 token metadata, and revocation all passed. Sanitized evidence is committed in
 those repositories; no token or secret value is included.
+
+## Follow-up with the supplied account
+
+The production UI bundle uses `/rest` for Edge. Defaults now use
+`https://trust.certlocker.io` and `https://trust.certlocker.io/rest`.
+Unauthenticated POST to `/rest/security/v1/ui-props` succeeds, whereas
+`/rest/security/v1/cli-authorize` and `/rest/security/v1/cli-token` return JSON
+404 `JEREMY08 Resource (endpoint) does not exist`. The deployed UI JavaScript
+contains ordinary sign-in/2FA but no CLI authorization/callback code.
+
+Read-only account-scoped token/lookup requests also returned 404 with the supplied
+account ID, while legacy token metadata remained HTTP 200 / ACTIVE / SECRET.
+No browser login or 2FA was started because the deployed CLI handoff is absent.
+The next requirement is deploying the CLI-enabled Edge/UI (and account-scoped
+Gateway for that acceptance test), rather than obtaining another credential.
