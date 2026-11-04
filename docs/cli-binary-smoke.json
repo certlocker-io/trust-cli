@@ -1,0 +1,22 @@
+{
+  "environment": "local HTTP fixture",
+  "binary": "compiled from current source",
+  "pkce_login": true,
+  "credential_permissions_0600": true,
+  "token_create_get_update_revoke": true,
+  "secret_create_get_put_revoke": true,
+  "logout_cleanup": true,
+  "requests": [
+    "security/v1/cli-token",
+    "token/create",
+    "token/detail/token-fixture",
+    "secret/create",
+    "secret/modify",
+    "secret/detail/secret-fixture",
+    "token/modify",
+    "token/detail/token-fixture",
+    "secret/revoke",
+    "token/revoke",
+    "security/v1/sign-out"
+  ]
+}

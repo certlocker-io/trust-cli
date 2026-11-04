@@ -43,6 +43,7 @@ func newAsset(spec assetSpec) *cobra.Command {
 	create.Flags().String("body", "", "JSON file merged under the flags")
 	spec.Create(create)
 	cmd.AddCommand(create)
+	cmd.AddCommand(updateCommand(spec.Path))
 	cmd.AddCommand(actionCommand("revoke ID", "Revoke "+article, spec.Path, "revoke"))
 	cmd.AddCommand(actionCommand("suspend ID", "Suspend "+article, spec.Path, "suspend"))
 	cmd.AddCommand(actionCommand("unsuspend ID", "Unsuspend "+article, spec.Path, "resume"))
@@ -327,6 +328,9 @@ func objectFromFlags(cmd *cobra.Command, apply func(*cobra.Command, map[string]a
 		if err := json.Unmarshal(raw, &body); err != nil {
 			return nil, fmt.Errorf("--body: %w", err)
 		}
+	}
+	if body == nil {
+		return nil, fmt.Errorf("--body must contain a JSON object")
 	}
 	if err := apply(cmd, body); err != nil {
 		return nil, err

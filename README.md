@@ -298,7 +298,7 @@ Edge is the authority. The names below are the ones `whoami` shows and the ones 
 | Audit | `AUDIT_VIEW` |
 | Automations | `ACME_AUTOMATION_VIEW`, `ACME_AUTOMATION_MODIFY` |
 
-This CLI does not modify, lock, renew, or rotate assets.
+The CLI supports `update` (aliases `modify` and `put`) for hosts, secrets, probes, tokens, agents, and certificates. Lock, renew, and rotate operations are not implemented.
 
 ## Help
 
@@ -307,3 +307,40 @@ trust --help
 trust hosts create --help
 trust version
 ```
+
+
+## Update assets and rollout verification (2026-11-04)
+
+`hosts`, `secrets`, `probes`, `tokens`, `agents`, and `certificates` support
+`update ID --body file.json`, with aliases `modify` and `put`. Pass `--body -`
+to read JSON from stdin. Supply the full update form; this is not a JSON merge
+patch. The command sets `id` and rejects mismatched IDs, arrays and null bodies.
+Edge's contract is **POST resource/modify**, even when the CLI alias is `put`.
+
+```bash
+trust secrets update '<secret-id>' --body update-secret.json
+trust tokens put '<token-id>' --body update-token.json
+```
+
+Keep secret files private and out of source control. Update output redacts secret
+and private-key fields. Gateway `CERTLOCKER_TOKEN` credentials belong to the
+Go/Rust/Java clients and Ansible; this management CLI needs an Edge browser login
+and session. Select the deployment with `--ui`/`--edge` or `TRUST_UI_URL` and
+`TRUST_EDGE_URL`; account selection comes from that authenticated Edge session.
+The configured `app.certlocker.io` default did not resolve during verification;
+`trust.certlocker.io/edge/rest` returned HTML rather than a working Edge API.
+An explicit, enabled UI/Edge URL is required until rollout DNS/routing is ready.
+
+```bash
+go test -race ./...
+go vet ./...
+python3 scripts/smoke_cli.py
+```
+
+The smoke script builds and executes the Linux CLI against a local HTTP fixture,
+including PKCE browser callback/exchange, saved credentials at mode 0600, token
+create/get/update/revoke, secret create/get/put/revoke, and logout cleanup. It
+prints sanitized JSON proof. This is not live user login or live 2FA proof.
+Live Edge authentication and management create/update remain unverified until a
+working Edge endpoint and an account/browser login are available. See
+[verification](docs/verification-2026-11-04.md).

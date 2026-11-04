@@ -19,6 +19,7 @@ func newCertificates() *cobra.Command {
 		Aliases: []string{"certs"},
 		Short:   "Manage certificates",
 	}
+	cmd.AddCommand(updateCommand("cert"))
 	cmd.AddCommand(listCommand("cert", "List certificates"))
 	cmd.AddCommand(&cobra.Command{
 		Use:   "get ID",
