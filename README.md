@@ -341,3 +341,15 @@ prints sanitized JSON proof. This is not live user login or live 2FA proof.
 This evidence covers local contracts; live Edge authentication and management
 create/update were not included in that run. See
 [verification](docs/verification-2026-11-04.md).
+
+### Real dev API verification (2026-11-04)
+
+The isolated remote dev stack passed browser/2FA CLI login, PKCE rejection checks,
+token and secret create/read/update, account-scoped Gateway access and tenant
+isolation, actual Go and Rust smoke executables, Ansible create/repeat/lookup,
+and DEVICE OIDC enrollment/exchange/suspension checks. Created fixtures were
+revoked and the CLI logged out. See [sanitized proof](docs/dev-api-verification-2026-11-04.json).
+This verifies the tested dev source plus the CLI route-access and shared DAO enum
+conversion fixes; it does not assert a public deployment has been upgraded.
+The reproducible scenario is Trust's `e2e/specs/dev-api-compatibility.phase.spec.ts`
+(lifecycle phase 41). Public cloud OIDC providers are separate integration coverage.
