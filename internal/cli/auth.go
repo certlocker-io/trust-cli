@@ -10,10 +10,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Darren-Certlocker/trust-cli/internal/auth"
-	"github.com/Darren-Certlocker/trust-cli/internal/config"
-	"github.com/Darren-Certlocker/trust-cli/internal/edge"
-	"github.com/Darren-Certlocker/trust-cli/internal/output"
+	"github.com/certlocker-io/trust-cli/internal/auth"
+	"github.com/certlocker-io/trust-cli/internal/config"
+	"github.com/certlocker-io/trust-cli/internal/edge"
+	"github.com/certlocker-io/trust-cli/internal/output"
 )
 
 func newAuth() *cobra.Command {
@@ -27,6 +27,7 @@ func newAuth() *cobra.Command {
 		RunE:  runLogin,
 	}
 	login.Flags().Duration("timeout", 5*time.Minute, "How long to wait for the browser to finish sign-in")
+	login.Flags().Bool("no-browser", false, "Print the login URL without launching a browser")
 	cmd.AddCommand(login)
 	cmd.AddCommand(&cobra.Command{
 		Use:   "logout",
@@ -47,9 +48,10 @@ func runLogin(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	timeout, _ := cmd.Flags().GetDuration("timeout")
+	noBrowser, _ := cmd.Flags().GetBool("no-browser")
 	ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 	defer cancel()
-	creds, err := (auth.Login{EdgeURL: edgeURL, UIURL: uiURL}).Run(ctx)
+	creds, err := (auth.Login{EdgeURL: edgeURL, UIURL: uiURL, NoBrowser: noBrowser}).Run(ctx)
 	if err != nil {
 		return err
 	}

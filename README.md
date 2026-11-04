@@ -6,52 +6,50 @@ The binary is `trust`. Releases cover Linux, macOS, and Windows on amd64 and arm
 
 ## Install
 
-### Download a release
+### Run directly from the Go repository
 
-Published tags build archives and `checksums.txt` on GitHub Releases. The archive name is `trust_<version>_<os>_<arch>`.
-
-| OS | Archive | Binary |
-| --- | --- | --- |
-| macOS | `trust_<version>_darwin_amd64.tar.gz` or `trust_<version>_darwin_arm64.tar.gz` | `trust` |
-| Linux | `trust_<version>_linux_amd64.tar.gz` or `trust_<version>_linux_arm64.tar.gz` | `trust` |
-| Windows | `trust_<version>_windows_amd64.zip` or `trust_<version>_windows_arm64.zip` | `trust.exe` |
-
-macOS or Linux:
+Requires Go 1.25 or newer. Clone the organisation repository and run commands
+from its root; no installed binary or workspace report path is required:
 
 ```bash
-# Example: macOS on Apple silicon, version 1.0.0.
-curl -fsSL -o trust.tar.gz \
-  https://github.com/Darren-Certlocker/trust-cli/releases/download/v1.0.0/trust_1.0.0_darwin_arm64.tar.gz
-curl -fsSL -o checksums.txt \
-  https://github.com/Darren-Certlocker/trust-cli/releases/download/v1.0.0/checksums.txt
-shasum -a 256 -c checksums.txt --ignore-missing
-tar -xzf trust.tar.gz
-sudo install -m 755 trust /usr/local/bin/trust
-trust version
+git clone https://github.com/certlocker-io/trust-cli.git
+cd trust-cli
+go run ./cmd/trust --ui https://demo1.certlocker.io \
+  --edge https://demo1.certlocker.io/rest auth login --no-browser --timeout 10m
 ```
 
-On Linux, `sha256sum -c checksums.txt --ignore-missing` checks the archive. Put `trust` on `PATH`.
-
-Windows, in PowerShell:
-
-```powershell
-Invoke-WebRequest -Uri https://github.com/Darren-Certlocker/trust-cli/releases/download/v1.0.0/trust_1.0.0_windows_amd64.zip -OutFile trust.zip
-Expand-Archive trust.zip -DestinationPath .
-# Move .\trust.exe onto a directory in $env:PATH
-trust.exe version
-```
-
-`Get-FileHash trust.zip -Algorithm SHA256` should match the line for that zip in `checksums.txt`.
-
-### From source
-
-Go 1.25 or newer:
+Open the printed URL in a browser **on the same machine**, sign in and complete
+2FA while leaving the terminal running. Omit `--no-browser` to launch the browser
+automatically; the URL is always printed as a fallback.
 
 ```bash
-go install github.com/Darren-Certlocker/trust-cli/cmd/trust@latest
+go run ./cmd/trust auth whoami
+go run ./cmd/trust tokens list
+go run ./cmd/trust secrets list
+go run ./cmd/trust auth logout
 ```
 
-`go install` places `trust` in `$(go env GOPATH)/bin`.
+Login saves the UI/Edge URLs, so subsequent commands use the same deployment.
+CLI account and permissions come from the signed-in Edge session. Gateway
+`CERTLOCKER_TOKEN` and account-ID route configuration belong to the SDKs/Ansible.
+
+### Build or install
+
+```bash
+go build -o bin/trust ./cmd/trust
+./bin/trust version
+# Or install directly from the organisation repository:
+go install github.com/certlocker-io/trust-cli/cmd/trust@latest
+```
+
+`go install` puts `trust` in `$(go env GOPATH)/bin`. Every main-branch push runs
+CI and uploads binaries for Linux, macOS and Windows, on amd64 and arm64, to
+[GitHub Actions](https://github.com/certlocker-io/trust-cli/actions/workflows/ci.yml).
+Only Linux amd64 runs the executable lifecycle smoke test; the other targets are
+cross-build checks. Tagged `v*` releases run tests and GoReleaser to publish
+archives plus checksums to [Releases](https://github.com/certlocker-io/trust-cli/releases).
+Download the archive matching your OS/architecture and verify its SHA-256 against
+`checksums.txt` before putting `trust` (`trust.exe` on Windows) on PATH.
 
 ## Sign in
 
@@ -59,7 +57,7 @@ go install github.com/Darren-Certlocker/trust-cli/cmd/trust@latest
 trust auth login
 ```
 
-The CLI listens on `127.0.0.1` and opens the Edge login page. Sign in with your password or SSO, then complete CertLocker 2FA in the browser. When Edge accepts the login it redirects back to the CLI. The session is stored locally. If the browser does not open, the command prints the URL.
+The CLI listens on `127.0.0.1` and opens the Edge login page. Sign in with your password or SSO, then complete CertLocker 2FA in the browser. When Edge accepts the login it redirects back to the CLI. The session is stored locally. The login URL is always printed. Use `--no-browser` to skip automatic browser launch.
 
 ```bash
 trust auth whoami
@@ -95,7 +93,7 @@ trust auth login \
 
 `auth login` waits 5 minutes. `--timeout 10m` changes that.
 
-Login needs an Edge and ui-edge build that expose `POST /edge/rest/security/v1/cli-authorize` and `POST /edge/rest/security/v1/cli-token`.
+Login needs matching Edge and ui-edge CLI authentication support. The endpoints are `POST <edge-base>/security/v1/cli-authorize` and `POST <edge-base>/security/v1/cli-token`. Before opening the browser, the CLI checks the token endpoint with an empty request; missing routes, HTML responses and redirects produce an immediate error.
 
 ## Output
 
@@ -329,12 +327,6 @@ and session. Select the deployment with `--ui`/`--edge` or `TRUST_UI_URL` and
 `TRUST_EDGE_URL`; account selection comes from that authenticated Edge session.
 The default UI is `https://trust.certlocker.io` and the Edge API base is
 `https://trust.certlocker.io/rest`, matching the deployed UI configuration.
-On 2026-11-04, that deployment supported ordinary UI login but returned 404 for
-both `POST /rest/security/v1/cli-authorize` and `cli-token`. Its deployed UI bundle
-also lacked CLI callback support. Deploy the matching Trust Edge and ui-edge
-versions before using browser CLI login; completing ordinary UI 2FA alone cannot
-complete the CLI handoff. Account-scoped Gateway requests also returned 404 while
-legacy token metadata succeeded.
 
 ```bash
 go test -race ./...
@@ -346,6 +338,6 @@ The smoke script builds and executes the Linux CLI against a local HTTP fixture,
 including PKCE browser callback/exchange, saved credentials at mode 0600, token
 create/get/update/revoke, secret create/get/put/revoke, and logout cleanup. It
 prints sanitized JSON proof. This is not live user login or live 2FA proof.
-Live Edge authentication and management create/update remain unverified until a
-CLI-enabled Edge/UI deployment and an account/browser login are available. See
+This evidence covers local contracts; live Edge authentication and management
+create/update were not included in that run. See
 [verification](docs/verification-2026-11-04.md).

@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Darren-Certlocker/trust-cli/internal/edge"
-	"github.com/Darren-Certlocker/trust-cli/internal/output"
+	"github.com/certlocker-io/trust-cli/internal/edge"
+	"github.com/certlocker-io/trust-cli/internal/output"
 )
 
 type assetSpec struct {

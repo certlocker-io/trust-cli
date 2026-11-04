@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Darren-Certlocker/trust-cli/internal/output"
+	"github.com/certlocker-io/trust-cli/internal/output"
 )
 
 var (

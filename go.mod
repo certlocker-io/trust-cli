@@ -1,4 +1,4 @@
-module github.com/Darren-Certlocker/trust-cli
+module github.com/certlocker-io/trust-cli
 
 go 1.25
 

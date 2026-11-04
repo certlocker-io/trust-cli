@@ -37,6 +37,12 @@ def main():
                 body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
                 path = self.path.removeprefix('/edge/rest/')
                 requests.append(path)
+                if path == 'security/v1/cli-token' and not body:
+                    self.send_response(401)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(b'{"error_message":"missing code"}')
+                    return
                 if path == 'security/v1/cli-token':
                     challenge = base64.urlsafe_b64encode(hashlib.sha256(body['code_verifier'].encode()).digest()).decode().rstrip('=')
                     assert challenge == login['code_challenge']

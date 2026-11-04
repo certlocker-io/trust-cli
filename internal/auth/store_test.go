@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/Darren-Certlocker/trust-cli/internal/config"
+	"github.com/certlocker-io/trust-cli/internal/config"
 )
 
 func TestCredentialsFileMode(t *testing.T) {

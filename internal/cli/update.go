@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/Darren-Certlocker/trust-cli/internal/output"
+	"github.com/certlocker-io/trust-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Darren-Certlocker/trust-cli/internal/auth"
+	"github.com/certlocker-io/trust-cli/internal/auth"
 )
 
 // Test actual Cobra commands through credential loading and the HTTP transport.

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/Darren-Certlocker/trust-cli/internal/cli"
+	"github.com/certlocker-io/trust-cli/internal/cli"
 )
 
 func main() {

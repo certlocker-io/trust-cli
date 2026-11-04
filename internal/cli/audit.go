@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Darren-Certlocker/trust-cli/internal/edge"
+	"github.com/certlocker-io/trust-cli/internal/edge"
 )
 
 func newAudit() *cobra.Command {

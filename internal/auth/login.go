@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pkg/browser"
 )
@@ -17,14 +18,21 @@ import (
 var OpenBrowser = browser.OpenURL
 
 type Login struct {
-	EdgeURL string
-	UIURL   string
-	Open    func(string) error
-	Stdout  io.Writer
-	Stderr  io.Writer
+	EdgeURL   string
+	UIURL     string
+	Open      func(string) error
+	Stdout    io.Writer
+	Stderr    io.Writer
+	NoBrowser bool
 }
 
 func (l Login) Run(ctx context.Context) (Credentials, error) {
+	client := &http.Client{Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	if err := checkCLIEndpoint(ctx, client, l.EdgeURL); err != nil {
+		return Credentials{}, err
+	}
 	verifier, err := NewVerifier()
 	if err != nil {
 		return Credentials{}, err
@@ -95,12 +103,15 @@ func (l Login) Run(ctx context.Context) (Credentials, error) {
 		stderr = os.Stderr
 	}
 	fmt.Fprintln(stderr, "Sign in with your browser. CertLocker 2FA runs on the Edge login page.")
+	fmt.Fprintf(stderr, "Open this URL in a browser on this machine:\n%s\n", loginURL)
 	open := l.Open
 	if open == nil {
 		open = OpenBrowser
 	}
-	if err := open(loginURL); err != nil {
-		fmt.Fprintf(stderr, "Open this URL to sign in:\n%s\n", loginURL)
+	if !l.NoBrowser {
+		if err := open(loginURL); err != nil {
+			fmt.Fprintln(stderr, "Could not open the browser automatically; use the URL above.")
+		}
 	}
 
 	var result callback
@@ -127,7 +138,8 @@ func (l Login) Run(ctx context.Context) (Credentials, error) {
 		return Credentials{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	req.Header.Set("User-Agent", "CertLocker-Trust-CLI/1.0")
+	resp, err := client.Do(req)
 	if err != nil {
 		return Credentials{}, err
 	}
@@ -145,6 +157,32 @@ func (l Login) Run(ctx context.Context) (Credentials, error) {
 	}
 	creds.EdgeURL = strings.TrimRight(l.EdgeURL, "/")
 	return creds, nil
+}
+
+// An empty exchange is rejected by a CLI-enabled Edge before any grant can be
+// minted. Detect missing routes before asking the user to complete browser 2FA.
+func checkCLIEndpoint(ctx context.Context, client *http.Client, edgeURL string) error {
+	endpoint := strings.TrimRight(edgeURL, "/") + "/security/v1/cli-token"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader("{}"))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "CertLocker-Trust-CLI/1.0")
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("cannot reach Edge CLI sign-in: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusMethodNotAllowed {
+		return fmt.Errorf("Edge CLI sign-in is unavailable at %s (HTTP %d); check --edge and deploy an Edge build with CLI authentication support", endpoint, resp.StatusCode)
+	}
+	if (resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusUnauthorized) &&
+		strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "application/json") {
+		return nil
+	}
+	return fmt.Errorf("cannot confirm Edge CLI sign-in at %s (HTTP %d); expected a JSON rejection of an empty exchange; check the Edge URL and routing", endpoint, resp.StatusCode)
 }
 
 func LoginURL(uiBase, redirectURI, state, challenge string) (string, error) {

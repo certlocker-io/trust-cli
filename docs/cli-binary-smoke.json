@@ -8,6 +8,7 @@
   "logout_cleanup": true,
   "requests": [
     "security/v1/cli-token",
+    "security/v1/cli-token",
     "token/create",
     "token/detail/token-fixture",
     "secret/create",
@@ -18,5 +19,6 @@
     "secret/revoke",
     "token/revoke",
     "security/v1/sign-out"
-  ]
+  ],
+  "endpoint_preflight": true
 }
