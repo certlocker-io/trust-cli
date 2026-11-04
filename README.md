@@ -338,8 +338,8 @@ The smoke script builds and executes the Linux CLI against a local HTTP fixture,
 including PKCE browser callback/exchange, saved credentials at mode 0600, token
 create/get/update/revoke, secret create/get/put/revoke, and logout cleanup. It
 prints sanitized JSON proof. This is not live user login or live 2FA proof.
-This evidence covers local contracts; live Edge authentication and management
-create/update were not included in that run. See
+Real browser/2FA authentication and management create/update passed in the
+separate remote dev run below. See
 [verification](docs/verification-2026-11-04.md).
 
 ### Real dev API verification (2026-11-04)
