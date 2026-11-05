@@ -8,6 +8,9 @@ builds:
     binary: trust
     env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -buildvcs=false
     goos:
       - linux
       - darwin
@@ -20,6 +23,9 @@ builds:
 
 archives:
   - formats: [tar.gz]
+    files:
+      - README.md
+      - LICENSE
     format_overrides:
       - goos: windows
         formats: [zip]

@@ -96,6 +96,7 @@ func (c *Client) do(ctx context.Context, path string, body any, token string) ([
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "CertLocker-Trust-CLI/1.0")
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}

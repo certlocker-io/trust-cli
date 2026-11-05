@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -20,14 +21,18 @@ func newAuth() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
 		Short: "Sign in to Edge and inspect the saved session",
+		Args:  cobra.NoArgs,
+		RunE:  runLogin,
 	}
+	cmd.PersistentFlags().String("url", "", "Trust deployment base URL")
+	cmd.PersistentFlags().Duration("timeout", 5*time.Minute, "How long to wait for the browser to finish sign-in")
+	cmd.PersistentFlags().Bool("no-browser", false, "Print the login URL without launching a browser")
 	login := &cobra.Command{
 		Use:   "login",
 		Short: "Open a browser, complete Edge sign-in and 2FA, and store the session",
 		RunE:  runLogin,
 	}
-	login.Flags().Duration("timeout", 5*time.Minute, "How long to wait for the browser to finish sign-in")
-	login.Flags().Bool("no-browser", false, "Print the login URL without launching a browser")
+	login.Args = cobra.NoArgs
 	cmd.AddCommand(login)
 	cmd.AddCommand(&cobra.Command{
 		Use:   "logout",
@@ -43,7 +48,22 @@ func newAuth() *cobra.Command {
 }
 
 func runLogin(cmd *cobra.Command, args []string) error {
-	edgeURL, uiURL, err := config.Resolve(flagEdge, flagUI)
+	base, _ := cmd.Flags().GetString("url")
+	var edgeURL, uiURL string
+	var err error
+	if cmd.Flags().Changed("url") {
+		if flagEdge != "" || flagUI != "" {
+			return fmt.Errorf("--url cannot be combined with --edge or --ui")
+		}
+		base = trimURL(base)
+		u, parseErr := url.Parse(base)
+		if parseErr != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.RawQuery != "" || u.Fragment != "" || u.User != nil {
+			return fmt.Errorf("--url must be an absolute HTTP or HTTPS Trust deployment URL without credentials, query, or fragment")
+		}
+		uiURL, edgeURL = base, base+"/rest"
+	} else {
+		edgeURL, uiURL, err = config.Resolve(flagEdge, flagUI)
+	}
 	if err != nil {
 		return err
 	}
@@ -65,6 +85,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 	return output.Write(mustJSON(map[string]any{
 		"email":        creds.Email,
 		"display_name": creds.DisplayName,
+		"super_user":   creds.SuperUser,
 		"permissions":  creds.Permissions,
 		"groups":       creds.Groups,
 		"edge_url":     creds.EdgeURL,

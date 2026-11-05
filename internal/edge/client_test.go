@@ -11,6 +11,9 @@ import (
 func TestRenewAndRetry(t *testing.T) {
 	var sawRenewToken string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.UserAgent() != "CertLocker-Trust-CLI/1.0" {
+			t.Errorf("unexpected user agent %q", r.UserAgent())
+		}
 		switch r.URL.Path {
 		case "/edge/rest/host/paged":
 			if r.Header.Get("Authorization") != "Bearer renewed" {

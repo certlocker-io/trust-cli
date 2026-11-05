@@ -35,7 +35,7 @@ def main():
         def do_POST(self):
             try:
                 body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
-                path = self.path.removeprefix('/edge/rest/')
+                path = self.path.removeprefix('/rest/')
                 requests.append(path)
                 if path == 'security/v1/cli-token' and not body:
                     self.send_response(401)
@@ -99,13 +99,12 @@ def main():
             base = 'http://127.0.0.1:' + str(server.server_port)
 
             def run(*arguments, body=None):
-                result = subprocess.run([str(binary), '--edge', base + '/edge/rest', '--ui', base,
-                                         '--output', 'json', *arguments], env=env, input=body,
+                result = subprocess.run([str(binary), '--output', 'json', *arguments], env=env, input=body,
                                         capture_output=True, text=True, timeout=30)
                 assert result.returncode == 0, 'CLI command failed: ' + ' '.join(arguments[:2])
                 return json.loads(result.stdout) if result.stdout.strip() else None
 
-            run('auth', 'login', '--timeout', '15s')
+            run('auth', '--url', base, '--timeout', '15s')
             credentials = directory / 'config/trust/credentials.json'
             assert credentials.stat().st_mode & 0o777 == 0o600
             assert run('auth', 'whoami')['email'] == 'fixture@example.test'

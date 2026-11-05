@@ -14,8 +14,7 @@ from its root; no installed binary or workspace report path is required:
 ```bash
 git clone https://github.com/certlocker-io/trust-cli.git
 cd trust-cli
-go run ./cmd/trust --ui https://demo1.certlocker.io \
-  --edge https://demo1.certlocker.io/rest auth login --no-browser --timeout 10m
+go run ./cmd/trust auth --url https://trust.certlocker.io --no-browser --timeout 10m
 ```
 
 Open the printed URL in a browser **on the same machine**, sign in and complete
@@ -42,8 +41,8 @@ go build -o bin/trust ./cmd/trust
 go install github.com/certlocker-io/trust-cli/cmd/trust@latest
 ```
 
-`go install` puts `trust` in `$(go env GOPATH)/bin`. Every main-branch push runs
-CI and uploads binaries for Linux, macOS and Windows, on amd64 and arm64, to
+`go install` puts `trust` in `$(go env GOPATH)/bin`. Every main- or dev-branch push runs
+CI and uploads binaries and release-format snapshot archives with checksums for Linux, macOS and Windows, on amd64 and arm64, to
 [GitHub Actions](https://github.com/certlocker-io/trust-cli/actions/workflows/ci.yml).
 Only Linux amd64 runs the executable lifecycle smoke test; the other targets are
 cross-build checks. Tagged `v*` releases run tests and GoReleaser to publish
@@ -54,8 +53,13 @@ Download the archive matching your OS/architecture and verify its SHA-256 agains
 ## Sign in
 
 ```bash
-trust auth login
+trust auth --url https://trust.certlocker.io
 ```
+
+Use the deployment's base URL, without `/oidc` or `/rest`; the CLI derives the
+Edge API URL and saves both URLs after a successful login. `trust auth` without
+`--url` uses the saved deployment or the default. `trust auth login` remains
+available, including `--url`, `--no-browser`, and `--timeout`.
 
 The CLI listens on `127.0.0.1` and opens the Edge login page. Sign in with your password or SSO, then complete CertLocker 2FA in the browser. When Edge accepts the login it redirects back to the CLI. The session is stored locally. The login URL is always printed. Use `--no-browser` to skip automatic browser launch.
 
@@ -75,6 +79,11 @@ Credentials and the saved URLs live under the OS config directory, mode `0600` o
 | Windows | `%AppData%\trust\` |
 
 `credentials.json` holds the session. `config.json` holds the Edge and UI URLs used at login.
+
+The login result includes `super_user`; a super-user session can have empty
+permissions and groups. The CLI currently shares the authenticated browser
+session. Signing in does not enroll an OIDC device or create a separately
+listed CLI connection in Trust.
 
 ### Where it connects
 
@@ -99,7 +108,46 @@ Login needs matching Edge and ui-edge CLI authentication support. The endpoints 
 
 The default is a table. `--output json` prints indented JSON. This flag is global.
 
-Errors from Edge are printed and the process exits 1. HTTP 403 means the signed-in user does not have the permission for that call.
+Errors from Edge are printed and the process exits 1. A JSON HTTP 403 from Edge
+indicates denied access. An HTML 403 can instead come from the deployment's
+proxy rules before the request reaches Edge.
+
+## Everyday examples
+
+From the repository directory, use `go run ./cmd/trust` in place of `trust`
+in any example below. An installed release binary can be run from any directory.
+After login, commands use the saved deployment automatically.
+
+```bash
+trust auth whoami
+trust hosts list --status ACTIVE --limit 10
+trust certificates list
+trust secrets list
+trust tokens list
+trust probes list
+trust agents list
+trust agents get <agent-id>
+trust --output json agents list
+trust audit list --limit 10
+trust audit list --outcome FAILURE --limit 20
+trust audit actions
+trust audit get <audit-id>
+```
+
+Replace angle-bracket placeholders with IDs returned by the corresponding list
+command. `get` always needs an ID.
+
+Create a short-lived test certificate, inspect it, and remove it afterward:
+
+```bash
+trust certificates generate --name cli-test --cn cli-test.example.test --days 1
+trust certificates get <certificate-id>
+trust certificates download <certificate-id>
+trust certificates delete <certificate-id>
+```
+
+Use `trust tokens create --help` or `trust agents update --help` for command
+options, and `trust auth logout` to end the saved session.
 
 ## Hosts, certificates, secrets, probes, tokens, and AI agents
 
@@ -267,6 +315,23 @@ Filters become Edge query `musts`, a `groups` `ins` clause, and a `DATE` range o
 ## Automations
 
 List and get use `ACME_AUTOMATION_VIEW`. Run uses `ACME_AUTOMATION_MODIFY`.
+
+The CLI currently supports `list`, `get`, and `run`; it does not yet provide
+`automations create` or `update`. Create the automation in Trust's Automations
+UI: choose its type and groups, select a host token for the targets, and enter
+the script. Then find its ID with `trust automations list` and inspect it with
+`trust automations get <automation-id>`.
+
+To run an existing certificate automation against a certificate:
+
+```bash
+trust automations run <automation-id> --type certificate \
+  --certificate <certificate-id> --wait --timeout 2m
+```
+
+This executes the saved script on its configured targets. The certificate ID
+is a certificate record ID. An optional `--token` supplies a certificate access
+token for script substitution.
 
 ```bash
 trust automations list --status ACTIVE
