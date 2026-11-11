@@ -31,6 +31,12 @@ go run ./cmd/trust auth logout
 Login saves the UI/Edge URLs, so subsequent commands use the same deployment.
 CLI account and permissions come from the signed-in Edge session. Gateway
 `CERTLOCKER_TOKEN` and account-ID route configuration belong to the SDKs/Ansible.
+Gateway deployment APIs now require account-scoped paths; hybrid/legacy routing
+is no longer supported. CertLocker's deployment account is `2pc4im00jo`.
+Use `trust auth account --output json` to retrieve the account ID authorized by
+your Edge session (requires account-view permission), then supply that ID to
+Gateway deployments as `CERTLOCKER_ACCOUNT_ID`. This command does not select or
+switch tenants, and Gateway environment variables do not override the CLI session.
 
 ### Build or install
 

@@ -48,6 +48,7 @@ func TestCommandHTTPContracts(t *testing.T) {
 		path   string
 		fields map[string]any
 	}{
+		{[]string{"auth", "account"}, "account/detail", nil},
 		{[]string{"hosts", "create", "--name", "fixture", "--ip", "127.0.0.1", "--port", "22"}, "host/create", map[string]any{"name": "fixture", "ip_address": "127.0.0.1", "port": float64(22)}},
 		{[]string{"secrets", "create", "--name", "fixture", "--type", "password", "--secret", "synthetic-value"}, "secret/create", map[string]any{"secret_type": "PASSWORD", "secret": "synthetic-value"}},
 		{[]string{"tokens", "create", "--name", "fixture", "--type", "secret", "--duration", "1", "--unit", "hours"}, "token/create", map[string]any{"token_type": "SECRET", "duration": map[string]any{"interval": float64(1), "unit": "HOURS"}}},
@@ -107,7 +108,7 @@ func TestCommandDeniedAndInvalidInput(t *testing.T) {
 	if err := auth.Save(auth.Credentials{SessionToken: "fixture-session"}); err != nil {
 		t.Fatal(err)
 	}
-	for _, args := range [][]string{{"hosts", "list"}, {"hosts", "get"}, {"tokens", "create", "--name", "missing-type"}, {"automations", "run", "id", "--type", "certificate"}} {
+	for _, args := range [][]string{{"auth", "account"}, {"hosts", "list"}, {"hosts", "get"}, {"tokens", "create", "--name", "missing-type"}, {"automations", "run", "id", "--type", "certificate"}} {
 		root := New()
 		root.SetArgs(append([]string{"--edge", server.URL}, args...))
 		if err := root.ExecuteContext(context.Background()); err == nil {

@@ -44,6 +44,22 @@ func newAuth() *cobra.Command {
 		Short: "Show the signed-in user and permissions",
 		RunE:  runWhoami,
 	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "account",
+		Short: "Show the authenticated Trust account ID for Gateway deployment configuration",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			raw, err := post(cmd, "account/detail", map[string]any{})
+			if err != nil {
+				return err
+			}
+			id := jsonString(raw, "id")
+			if id == "" {
+				return fmt.Errorf("Edge did not return an account ID")
+			}
+			return output.Write(mustJSON(map[string]any{"account_id": id}))
+		},
+	})
 	return cmd
 }
 
